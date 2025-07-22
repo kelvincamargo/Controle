@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Controle de Ferramentas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Controle de Ferramentas</h1>
+
+  <form id="tool-form">
+    <input type="text" placeholder="Nome da Pessoa" id="person" required>
+    <input type="text" placeholder="Nome da Ferramenta" id="tool" required>
+    <input type="number" placeholder="Quantidade" id="quantity" min="1" required>
+    <input type="date" id="date" required>
+    <button type="submit">Registrar</button>
+  </form>
+
+  <input type="text" id="search" placeholder="Buscar por nome da pessoa...">
+  <button onclick="exportarExcel()">Exportar Excel</button>
+
+  <div id="requests"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
