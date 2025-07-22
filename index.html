@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
   <meta charset="UTF-8">
   <title>Controle de Ferramentas</title>
   <link rel="stylesheet" href="style.css">
@@ -17,7 +18,159 @@
   </form>
 
   <input type="text" id="search" placeholder="Buscar por nome da pessoa...">
-  <button onclick="exportarExcel()">Exportar Excel</button>
+ 
+  <!-- jsPDF e jsPDF-AutoTable -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Botões -->
+<button onclick="exportarResumoPDF()">Exportar Resumo das Ferramentas PDF</button>
+<button onclick="exportarResumoPedidosPDF()">Exportar Resumo dos Pedidos PDF</button>
+
+<script>
+async function exportarResumoPDF() {
+  const { jsPDF } = window.jspdf;
+
+  const pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  const resumo = {};
+
+  pedidos.forEach(pedido => {
+    pedido.tools.forEach(item => {
+      const toolName = item.tool.toLowerCase();
+      if (!resumo[toolName]) {
+        resumo[toolName] = { retirado: 0, devolvido: 0 };
+      }
+      resumo[toolName].retirado += item.quantity;
+      resumo[toolName].devolvido += item.returned || 0;
+    });
+  });
+
+  const data = [];
+  let totalRetirado = 0;
+  let totalDevolvido = 0;
+  let totalEmAberto = 0;
+
+  Object.entries(resumo).forEach(([tool, val]) => {
+    const emAberto = val.retirado - val.devolvido;
+    const perc = val.retirado > 0 ? val.devolvido / val.retirado : 0;
+
+    data.push([
+      tool.charAt(0).toUpperCase() + tool.slice(1),
+      val.retirado,
+      val.devolvido,
+      emAberto,
+      (perc * 100).toFixed(2) + "%"
+    ]);
+
+    totalRetirado += val.retirado;
+    totalDevolvido += val.devolvido;
+    totalEmAberto += emAberto;
+  });
+
+  const percGeral = totalRetirado > 0 ? (totalDevolvido / totalRetirado) : 0;
+  data.push([
+    "Total Geral",
+    totalRetirado,
+    totalDevolvido,
+    totalEmAberto,
+    (percGeral * 100).toFixed(2) + "%"
+  ]);
+
+  const doc = new jsPDF();
+
+  doc.text("Resumo Geral de Ferramentas", 14, 20);
+  doc.autoTable({
+    startY: 30,
+    head: [["Ferramenta", "Total Retirado", "Total Devolvido", "Em Aberto", "% Devolvido"]],
+    body: data,
+    styles: { halign: 'right' },
+    headStyles: { fillColor: [79, 129, 189], halign: 'center' },
+    columnStyles: { 0: { halign: 'left' } },
+    didParseCell: function (data) {
+      if (data.row.index === data.table.body.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [200, 200, 200];
+      }
+    }
+  });
+
+  doc.save("Resumo_Ferramentas.pdf");
+}
+
+
+async function exportarResumoPedidosPDF() {
+  const { jsPDF } = window.jspdf;
+
+  const pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
+  const resumoPessoas = {};
+
+  // Agrupa por pessoa e soma todas as ferramentas retiradas e devolvidas
+  pedidos.forEach(pedido => {
+    const pessoa = pedido.person.toLowerCase();
+    if (!resumoPessoas[pessoa]) {
+      resumoPessoas[pessoa] = { retirado: 0, devolvido: 0 };
+    }
+    pedido.tools.forEach(item => {
+      resumoPessoas[pessoa].retirado += item.quantity;
+      resumoPessoas[pessoa].devolvido += item.returned || 0;
+    });
+  });
+
+  const data = [];
+  let totalRetirado = 0;
+  let totalDevolvido = 0;
+  let totalEmAberto = 0;
+
+  Object.entries(resumoPessoas).forEach(([pessoa, val]) => {
+    const emAberto = val.retirado - val.devolvido;
+    const perc = val.retirado > 0 ? val.devolvido / val.retirado : 0;
+
+    data.push([
+      pessoa.charAt(0).toUpperCase() + pessoa.slice(1),
+      val.retirado,
+      val.devolvido,
+      emAberto,
+      (perc * 100).toFixed(2) + "%"
+    ]);
+
+    totalRetirado += val.retirado;
+    totalDevolvido += val.devolvido;
+    totalEmAberto += emAberto;
+  });
+
+  const percGeral = totalRetirado > 0 ? (totalDevolvido / totalRetirado) : 0;
+  data.push([
+    "Total Geral",
+    totalRetirado,
+    totalDevolvido,
+    totalEmAberto,
+    (percGeral * 100).toFixed(2) + "%"
+  ]);
+
+  const doc = new jsPDF();
+
+  doc.text("Resumo Geral dos Pedidos (Por Pessoa)", 14, 20);
+  doc.autoTable({
+    startY: 30,
+    head: [["Pessoa", "Total Retirado", "Total Devolvido", "Em Aberto", "% Devolvido"]],
+    body: data,
+    styles: { halign: 'right' },
+    headStyles: { fillColor: [79, 129, 189], halign: 'center' },
+    columnStyles: { 0: { halign: 'left' } },
+    didParseCell: function (data) {
+      if (data.row.index === data.table.body.length - 1) {
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [200, 200, 200];
+      }
+    }
+  });
+
+  doc.save("Resumo_Pedidos.pdf");
+}
+</script>
+
+
+
 
   <div id="requests"></div>
 
