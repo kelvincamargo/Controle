@@ -8,18 +8,18 @@
 </head>
 <body>
   <h1>Controle de Ferramentas</h1>
+<form id="tool-form">
+  <input type="text" id="person" placeholder="Nome" required>
+  <input type="text" id="builderNumber" placeholder="Nº Builder (opcional)">
+  <input type="text" id="tool" placeholder="Ferramenta" required>
+  <input type="number" id="quantity" placeholder="Quantidade" required>
+  <input type="date" id="date" required>
+  <button type="submit">Registrar</button>
+</form>
 
-  <form id="tool-form">
-    <input type="text" placeholder="Nome da Pessoa" id="person" required>
-    <input type="text" placeholder="Nome da Ferramenta" id="tool" required>
-    <input type="number" placeholder="Quantidade" id="quantity" min="1" required>
-    <input type="date" id="date" required>
-    <button type="submit">Registrar</button>
-  </form>
-
-  <input type="text" id="search" placeholder="Buscar por nome da pessoa...">
+  <input type="text" id="search" placeholder="Buscar nome ou N:Builder">
  
-  <!-- jsPDF e jsPDF-AutoTable -->
+<!-- jsPDF e jsPDF-AutoTable -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
@@ -104,15 +104,15 @@ async function exportarResumoPedidosPDF() {
   const pedidos = JSON.parse(localStorage.getItem("pedidos")) || [];
   const resumoPessoas = {};
 
-  // Agrupa por pessoa e soma todas as ferramentas retiradas e devolvidas
+  // Agrupa por pessoa + número do builder
   pedidos.forEach(pedido => {
-    const pessoa = pedido.person.toLowerCase();
-    if (!resumoPessoas[pessoa]) {
-      resumoPessoas[pessoa] = { retirado: 0, devolvido: 0 };
+    const chave = `${pedido.person} (Builder Nº ${pedido.builderNumber})`;
+    if (!resumoPessoas[chave]) {
+      resumoPessoas[chave] = { retirado: 0, devolvido: 0 };
     }
     pedido.tools.forEach(item => {
-      resumoPessoas[pessoa].retirado += item.quantity;
-      resumoPessoas[pessoa].devolvido += item.returned || 0;
+      resumoPessoas[chave].retirado += item.quantity;
+      resumoPessoas[chave].devolvido += item.returned || 0;
     });
   });
 
@@ -126,7 +126,7 @@ async function exportarResumoPedidosPDF() {
     const perc = val.retirado > 0 ? val.devolvido / val.retirado : 0;
 
     data.push([
-      pessoa.charAt(0).toUpperCase() + pessoa.slice(1),
+      pessoa,
       val.retirado,
       val.devolvido,
       emAberto,
@@ -149,10 +149,10 @@ async function exportarResumoPedidosPDF() {
 
   const doc = new jsPDF();
 
-  doc.text("Resumo Geral dos Pedidos (Por Pessoa)", 14, 20);
+  doc.text("Resumo Geral dos Pedidos (Por Pessoa + Builder Nº)", 14, 20);
   doc.autoTable({
     startY: 30,
-    head: [["Pessoa", "Total Retirado", "Total Devolvido", "Em Aberto", "% Devolvido"]],
+    head: [["Pessoa / Builder Nº", "Total Retirado", "Total Devolvido", "Em Aberto", "% Devolvido"]],
     body: data,
     styles: { halign: 'right' },
     headStyles: { fillColor: [79, 129, 189], halign: 'center' },
@@ -168,7 +168,6 @@ async function exportarResumoPedidosPDF() {
   doc.save("Resumo_Pedidos.pdf");
 }
 </script>
-
 
 
 
