@@ -63,8 +63,17 @@ form.addEventListener("submit", function (e) {
 
   salvarPedidos();
 
-  form.reset();
-  dateInput.value = today;
+// GUARDA nome e builder
+const ultimoNome = personInput.value;
+const ultimoBuilder = builderInput.value;
+
+form.reset();
+
+dateInput.value = today;
+
+// MANTÉM OS CAMPOS
+personInput.value = ultimoNome;
+builderInput.value = ultimoBuilder;
 
   render();
 });
@@ -137,11 +146,13 @@ function render() {
 }
 
 function devolver(id, index) {
+
   const pedido = pedidos.find(p => p.id === id);
 
   if (!pedido) return;
 
   const item = pedido.tools[index];
+
   const input = document.getElementById(`ret-${id}-${index}`);
 
   const devolucao = parseInt(input.value);
@@ -150,17 +161,33 @@ function devolver(id, index) {
     devolucao > 0 &&
     item.returned + devolucao <= item.quantity
   ) {
+
     salvarEstado();
 
     item.returned += devolucao;
 
+    // REMOVE FERRAMENTAS TOTALMENTE DEVOLVIDAS
+    pedido.tools = pedido.tools.filter(
+      ferramenta => ferramenta.returned < ferramenta.quantity
+    );
+
+    // SE NÃO TIVER MAIS FERRAMENTAS, REMOVE O PEDIDO
+    if (pedido.tools.length === 0) {
+
+      pedidos = pedidos.filter(p => p.id !== id);
+
+    }
+
     salvarPedidos();
+
     render();
+
   } else {
+
     alert("Valor inválido para devolução.");
+
   }
 }
-
 function editarPedido(id) {
   const pedido = pedidos.find(p => p.id === id);
 
